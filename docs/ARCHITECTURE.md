@@ -10,18 +10,27 @@ It is intentionally not a general-purpose browser.
 - Tauri 2 native window.
 - React shell occupies only the 40px top bar.
 - Each tab is a child WebView2 webview below the top bar.
-- Spark tabs intentionally use Tauri's default application WebView2 data store (no per-tab data-directory override). Phase 0 verifies that Google cookies/session persist across tabs, windows, and app restarts before release.
-- New windows are additional shell windows and can host their own child Spark webviews.
-- Remote Spark webviews are excluded from Tauri capabilities; only bundled shell webviews receive native permissions.
+- Child tab webviews are created by the Rust host so native WebView2 new-window requests can be intercepted before Windows opens an external browser.
+- Spark tabs intentionally use Tauri's default application WebView2 data store (no per-tab data-directory override), preserving a shared Google session across tabs and shell windows.
+- Google Docs and Sheets links opened by Spark are routed into new internal tabs in the same Spark Desktop window instead of Chrome or another external browser.
+- New shell windows can host their own child webviews while sharing the same application session store.
+- Remote content webviews are excluded from Tauri capabilities; only bundled shell webviews receive native permissions.
+
+## Native window controls
+
+The frameless shell delegates minimize, maximize/restore, close, and drag operations to validated Rust commands. This avoids interaction conflicts between the custom title bar and Tauri drag regions while keeping remote content isolated from native window control APIs.
 
 ## MVP controls
 
-- New tab.
+- New Spark tab.
 - Close tab.
 - New window.
+- Internal Google Docs / Sheets tabs opened from Spark.
+- Native minimize / maximize / close controls.
+- Drag-to-move frameless window and double-click title-bar maximize/restore.
 - Dark/light shell theme.
 - Ctrl+T / Ctrl+W / Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+Shift+N / Ctrl+R, including while focus is inside Spark.
-- Persistent tabs/theme.
+- Persistent tabs, URLs, and theme.
 - Auto-update check on launch.
 - Signed update download/install and restart prompt.
 
