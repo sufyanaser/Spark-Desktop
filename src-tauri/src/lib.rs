@@ -1,3 +1,4 @@
+use serde::Serialize;
 use tauri::{Emitter, Manager, WindowEvent};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, ShortcutState};
 
@@ -9,6 +10,37 @@ const SHORTCUTS: [&str; 6] = [
     "ctrl+shift+n",
     "ctrl+r",
 ];
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct OpenUrlRequest {
+    url: String,
+    source_label: String,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TabTitleChanged {
+    label: String,
+    title: String,
+}
+
+fn is_shell_window_label(label: &str) -> bool {
+    label == "main" || label.starts_with("window-")
+}
+
+fn is_workspace_document(url: &tauri::Url) -> bool {
+    if url.host_str() != Some("docs.google.com") {
+        return false;
+    }
+
+    let path = url.path();
+    path.starts_with("/document/") || path.starts_with("/spreadsheets/")
+}
+
+fn is_spark_url(url: &tauri::Url) -> bool {
+    url.host_str() == Some("gemini.google.com") && url.path().starts_with("/spark")
+}
 
 fn register_app_shortcuts(app: &tauri::AppHandle) {
     let shortcuts = app.global_shortcut();
@@ -26,14 +58,164 @@ fn unregister_app_shortcuts(app: &tauri::AppHandle) {
 #[tauri::command]
 fn reload_webview(app: tauri::AppHandle, label: String) -> Result<(), String> {
     if !label.starts_with("spark-") {
-        return Err("Only Spark tab webviews can be reloaded.".into());
+        return Err("Only Spark Desktop tab webviews can be reloaded.".into());
     }
 
     let webview = app
         .get_webview(&label)
-        .ok_or_else(|| format!("Spark webview '{label}' was not found."))?;
+        .ok_or_else(|| format!("Tab webview '{label}' was not found."))?;
 
     webview.reload().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn control_window(app: tauri::AppHandle, window_label: String, action: String) -> Result<(), String> {
+    if !is_shell_window_label(&window_label) {
+        return Err("Window control is restricted to Spark Desktop shell windows.".into());
+    }
+
+    let window = app
+        .get_window(&window_label)
+        .ok_or_else(|| format!("Window '{window_label}' was not found."))?;
+
+    match action.as_str() {
+        "minimize" => window.minimize(),
+        "toggle-maximize" => {
+            if window.is_maximized().map_err(|error| error.to_string())? {
+                window.unmaximize()
+            } else {
+                window.maximize()
+            }
+        }
+        "close" => window.close(),
+        "start-dragging" => window.start_dragging(),
+        _ => return Err(format!("Unsupported window action '{action}'.")),
+    }
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn create_shell_window(app: tauri::AppHandle, label: String) -> Result<(), String> {
+    if !label.starts_with("window-") {
+        return Err("Child shell window labels must start with 'window-'.".into());
+    }
+
+    if app.get_window(&label).is_some() {
+        return Ok(());
+    }
+
+    tauri::WebviewWindowBuilder::new(&app, label, tauri::WebviewUrl::App("index.html".into()))
+        .title("Spark Desktop")
+        .inner_size(1280.0, 820.0)
+        .min_inner_size(840.0, 560.0)
+        .resizable(true)
+        .decorations(false)
+        .center()
+        .build()
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn create_tab_webview(
+    app: tauri::AppHandle,
+    parent_label: String,
+    label: String,
+    url: String,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+) -> Result<(), String> {
+    if !is_shell_window_label(&parent_label) {
+        return Err("Tabs can only be attached to Spark Desktop shell windows.".into());
+    }
+
+    if !label.starts_with("spark-") {
+        return Err("Tab webview labels must start with 'spark-'.".into());
+    }
+
+    if app.get_webview(&label).is_some() {
+        return Ok(());
+    }
+
+    if width <= 0.0 || height <= 0.0 {
+        return Err("Tab webview dimensions must be positive.".into());
+    }
+
+    let parsed_url: tauri::Url = url
+        .parse()
+        .map_err(|error| format!("Invalid tab URL '{url}': {error}"))?;
+
+    if parsed_url.scheme() != "https" && parsed_url.scheme() != "http" {
+        return Err("Only HTTP(S) URLs can be opened in a Spark Desktop tab.".into());
+    }
+
+    let parent = app
+        .get_window(&parent_label)
+        .ok_or_else(|| format!("Parent window '{parent_label}' was not found."))?;
+
+    let popup_window = parent.clone();
+    let popup_source_label = label.clone();
+    let navigation_window = parent.clone();
+    let navigation_source_label = label.clone();
+    let title_window = parent.clone();
+    let title_label = label.clone();
+    let route_workspace_navigation = is_spark_url(&parsed_url);
+
+    let builder = tauri::webview::WebviewBuilder::new(
+        label.clone(),
+        tauri::WebviewUrl::External(parsed_url),
+    )
+    .focused(true)
+    .incognito(false)
+    .devtools(false)
+    .zoom_hotkeys_enabled(true)
+    .on_new_window(move |new_url, _features| {
+        if new_url.scheme() == "https" || new_url.scheme() == "http" {
+            let _ = popup_window.emit(
+                "spark-open-url",
+                OpenUrlRequest {
+                    url: new_url.to_string(),
+                    source_label: popup_source_label.clone(),
+                },
+            );
+        }
+        tauri::webview::NewWindowResponse::Deny
+    })
+    .on_navigation(move |new_url| {
+        if route_workspace_navigation && is_workspace_document(new_url) {
+            let _ = navigation_window.emit(
+                "spark-open-url",
+                OpenUrlRequest {
+                    url: new_url.to_string(),
+                    source_label: navigation_source_label.clone(),
+                },
+            );
+            return false;
+        }
+        true
+    })
+    .on_document_title_changed(move |_webview, title| {
+        if !title.trim().is_empty() {
+            let _ = title_window.emit(
+                "spark-tab-title",
+                TabTitleChanged {
+                    label: title_label.clone(),
+                    title,
+                },
+            );
+        }
+    });
+
+    parent
+        .add_child(
+            builder,
+            tauri::LogicalPosition::new(x, y),
+            tauri::LogicalSize::new(width, height),
+        )
+        .map(|_| ())
+        .map_err(|error| error.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -95,7 +277,12 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![reload_webview])
+        .invoke_handler(tauri::generate_handler![
+            reload_webview,
+            control_window,
+            create_shell_window,
+            create_tab_webview
+        ])
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .run(tauri::generate_context!())

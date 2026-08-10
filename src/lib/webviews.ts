@@ -2,10 +2,10 @@ import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi';
 import { invoke } from '@tauri-apps/api/core';
 import { Webview } from '@tauri-apps/api/webview';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import type { SparkTab } from '../types';
+import { SPARK_URL } from './storage';
 
-export const SPARK_URL = 'https://gemini.google.com/spark';
+export { SPARK_URL };
 export const TOPBAR_HEIGHT = 40;
 
 const handles = new Map<string, Webview>();
@@ -28,23 +28,19 @@ export async function ensureTabWebview(tab: SparkTab): Promise<Webview> {
 
   const parent = getCurrentWindow();
   const g = geometry();
-  const webview = new Webview(parent, tab.label, {
-    url: SPARK_URL,
+
+  await invoke('create_tab_webview', {
+    parentLabel: parent.label,
+    label: tab.label,
+    url: tab.url || SPARK_URL,
     x: g.x,
     y: g.y,
     width: g.width,
     height: g.height,
-    focus: true,
-    devtools: false,
-    incognito: false,
-    zoomHotkeysEnabled: true,
   });
 
-  await new Promise<void>((resolve, reject) => {
-    void webview.once('tauri://created', () => resolve());
-    void webview.once('tauri://error', (event) => reject(new Error(String(event.payload))));
-  });
-
+  const webview = await Webview.getByLabel(tab.label);
+  if (!webview) throw new Error(`Spark tab webview '${tab.label}' was not created.`);
   handles.set(tab.id, webview);
   return webview;
 }
@@ -85,20 +81,12 @@ export async function closeTabWebview(tab: SparkTab): Promise<void> {
 
 export async function createShellWindow(): Promise<void> {
   const label = `window-${Date.now()}-${Math.floor(Math.random() * 10_000)}`;
-  const child = new WebviewWindow(label, {
-    url: '/',
-    title: 'Spark Desktop',
-    width: 1280,
-    height: 820,
-    minWidth: 840,
-    minHeight: 560,
-    decorations: false,
-    resizable: true,
-    center: true,
-  });
+  await invoke('create_shell_window', { label });
+}
 
-  await new Promise<void>((resolve, reject) => {
-    void child.once('tauri://created', () => resolve());
-    void child.once('tauri://error', (event) => reject(new Error(String(event.payload))));
-  });
+export type WindowControlAction = 'minimize' | 'toggle-maximize' | 'close' | 'start-dragging';
+
+export async function controlCurrentWindow(action: WindowControlAction): Promise<void> {
+  const appWindow = getCurrentWindow();
+  await invoke('control_window', { windowLabel: appWindow.label, action });
 }
