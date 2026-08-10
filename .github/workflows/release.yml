@@ -1,6 +1,8 @@
 name: Release
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -42,6 +44,7 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm install
+
       - name: Verify version consistency
         run: npm run verify:versions
 

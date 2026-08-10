@@ -1,6 +1,6 @@
 # Spark Desktop
 
-A minimal Windows desktop shell for **Gemini Spark** with native tabs, multi-window support, persistent Google session state, dark/light shell themes, and signed GitHub-native auto updates.
+A minimal Windows desktop shell for **Gemini Spark** with native tabs, multi-window support, persistent Google session state, dark/light shell themes, and signed GitHub-native automatic updates.
 
 ## Scope
 
@@ -10,6 +10,7 @@ Spark Desktop intentionally stays small:
 - Multiple Spark tabs inside one desktop window.
 - Additional Spark windows.
 - Shared persistent WebView2 profile.
+- Google Docs and Sheets opened by Spark stay inside Spark Desktop tabs.
 - Dark / light application chrome.
 - Keyboard shortcuts.
 - Signed automatic updates through GitHub Releases.
@@ -37,14 +38,16 @@ npm run tauri dev
 - `develop`: development source of truth.
 - `main`: released state.
 - features/fixes merge to `develop` after CI.
-- release preparation merges `develop` to `main` only after validation.
+- validated release preparation merges `develop` to `main`.
 
 ## Auto-update
 
-The installed application checks the latest GitHub Release on launch. After Windows compatibility validation, a release is dispatched manually from `main`, built by GitHub Actions, signed with the Tauri updater key, and published with updater metadata.
+Every completed release promoted to `main` is published automatically by GitHub Actions as a signed GitHub Release with updater metadata. Installed copies check the latest release on launch; when a newer signed version exists, Spark Desktop downloads and installs it automatically without requiring a separate installer download from the user.
 
-The updater public key and GitHub Actions signing secrets are configured. Keep the private signing key backed up securely; losing it prevents future updates for installed copies.
+On Windows the passive updater may briefly show installer progress while applying the signed update. The application then exits/relaunches as required by the Windows updater flow.
+
+The updater public key and GitHub Actions signing secrets are configured. Keep the private signing key backed up securely; losing it prevents future trusted updates for installed copies.
 
 ## Current status
 
-The signed Windows release pipeline is configured. Production releases remain manually dispatched from validated `main` after Windows/Gemini compatibility verification.
+The signed Windows release pipeline is configured for automatic publishing from validated `main` releases, and installed copies use the GitHub Releases updater channel automatically on launch.
