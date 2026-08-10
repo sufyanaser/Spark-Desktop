@@ -1,34 +1,36 @@
 # Spark Desktop
 
-> A focused Windows desktop shell for Gemini Spark with native tabs, Google Workspace continuity, persistent sessions, and signed automatic updates.
+> A focused Windows desktop shell for Gemini Spark — native tabs, Google Workspace continuity, persistent sessions, and signed automatic updates without turning Spark into another browser.
 
-[![Latest release](https://img.shields.io/github/v/release/sufyanaser/Spark-Desktop?display_name=tag&sort=semver&label=release&color=2563eb)](https://github.com/sufyanaser/Spark-Desktop/releases/latest)
 [![CI](https://github.com/sufyanaser/Spark-Desktop/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sufyanaser/Spark-Desktop/actions/workflows/ci.yml)
-![Windows](https://img.shields.io/badge/platform-Windows-0f172a)
-![Tauri](https://img.shields.io/badge/Tauri-v2-24c8db)
-
-**[Download the latest signed Windows release](https://github.com/sufyanaser/Spark-Desktop/releases/latest)**
+[![Latest Release](https://img.shields.io/github/v/release/sufyanaser/Spark-Desktop?display_name=tag&sort=semver)](https://github.com/sufyanaser/Spark-Desktop/releases/latest)
+[![Windows](https://img.shields.io/badge/platform-Windows-0078D4)](#requirements)
+[![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB)](https://v2.tauri.app/)
 
 **Independent community project. Not affiliated with, endorsed by, or sponsored by Google.**
 
+---
+
 ## Why this exists
 
-Gemini Spark is already a web product. Spark Desktop does not try to replace its interface. It explores a smaller idea:
+Gemini Spark is already a web product. Spark Desktop does not try to replace its interface or rebuild Gemini with a private API.
+
+Instead, it explores a smaller product idea:
 
 **What if Spark could feel like a focused Windows workspace instead of a tab inside a general-purpose browser?**
 
-Spark Desktop adds only the desktop behavior that improves that workflow:
+The shell adds only the desktop behavior that improves that workflow:
 
 - multiple Spark tabs in one native window;
 - additional Spark windows;
-- persistent session state;
+- persistent Google session state;
 - Google Docs and Sheets opened by Spark stay inside Spark Desktop tabs;
-- native frameless window controls;
+- native frameless window controls and drag behavior;
 - keyboard-first tab controls;
 - dark/light application chrome;
 - signed automatic updates through GitHub Releases.
 
-It intentionally does **not** add an address bar, bookmarks, browser history, extensions, or a replacement Gemini UI.
+It intentionally does **not** add an address bar, bookmarks, browser history, extensions, or a custom Gemini UI.
 
 ## Product boundary
 
@@ -38,17 +40,19 @@ flowchart LR
     A --> C[Gemini Spark tab]
     A --> D[Google Docs tab]
     A --> E[Google Sheets tab]
-    D --> F[Google Workspace]
-    E --> F
+    B --> F[Google-owned web experience]
+    C --> F
+    D --> G[Google Workspace]
+    E --> G
 ```
 
-Spark Desktop owns the **desktop shell**. Google continues to own the **Gemini and Workspace web experiences and service behavior**.
+Spark Desktop owns the **desktop shell**. Google continues to own the **Gemini and Workspace web experiences, authentication, content, and service behavior**.
 
 ## Current capabilities
 
 | Area | Behavior |
 |---|---|
-| Spark | Opens `https://gemini.google.com/spark` directly |
+| Spark | Loads `https://gemini.google.com/spark` directly |
 | Tabs | Multiple internal Spark / Workspace tabs |
 | Windows | Multiple native Spark Desktop windows |
 | Session | Shared persistent WebView2 application profile |
@@ -60,15 +64,19 @@ Spark Desktop owns the **desktop shell**. Google continues to own the **Gemini a
 
 ## Engineering findings
 
-Building a desktop WebView host around a modern Google workflow exposed product-level integration lessons around popup behavior, Workspace navigation, shared session state, and how little native chrome is actually needed.
+Building a desktop WebView host around a modern Google workflow exposed several product-level integration lessons — especially around popup semantics, Google Workspace navigation, shared session state, and how little native chrome is actually needed.
 
-**[Read: Gemini Spark on Desktop — Product & Integration Findings](docs/GEMINI_SPARK_DESKTOP_FINDINGS.md)**
+The findings are documented here:
+
+**[Gemini Spark on Desktop — Product & Integration Findings](docs/GEMINI_SPARK_DESKTOP_FINDINGS.md)**
+
+This document is designed to be useful as constructive technical feedback for the Gemini community and product/developer teams.
 
 ## Architecture
 
 ```text
 Tauri 2 native window
-├─ React / TypeScript shell
+├─ React / TypeScript shell (trusted local UI)
 │  └─ 40px top bar: tabs + native window controls
 └─ Child WebView2 instances
    ├─ Gemini Spark
@@ -77,15 +85,40 @@ Tauri 2 native window
    └─ Google Sheets
 ```
 
+Key decisions:
+
+- remote Gemini/Google content does not receive Spark Desktop native Tauri capabilities;
+- tabs share the application WebView2 data store for consistent Google session behavior;
+- Workspace routing is deliberately narrow instead of becoming a general browser;
+- application releases are delivered through signed updater artifacts.
+
 See **[Architecture](docs/ARCHITECTURE.md)** for the implementation model.
 
-## Install on Windows
+## Automatic updates
 
-1. Open the [latest GitHub Release](https://github.com/sufyanaser/Spark-Desktop/releases/latest).
-2. Download `Spark.Desktop_<version>_x64-setup.exe`.
-3. Run the installer and launch **Spark Desktop**.
+Routine users should not need to download a new installer after every fix.
 
-Installed copies use signed updater metadata from GitHub Releases for routine updates.
+The release path is:
+
+```text
+develop
+→ validation
+→ main
+→ signed GitHub Release
+→ latest.json
+→ installed Spark Desktop
+→ automatic update
+```
+
+Installed copies check the signed GitHub Releases channel on launch. Validation installers produced by CI are diagnostics, not the normal update path.
+
+## Requirements
+
+- Windows 10/11
+- Microsoft Edge WebView2 Runtime
+- A Google account with access to the Gemini Spark experience you intend to use
+
+Availability and behavior of Gemini Spark and Google Workspace are controlled by Google and may change independently of this project.
 
 ## Development
 
@@ -106,30 +139,29 @@ cargo check
 ## Repository model
 
 - `develop` — development source of truth.
-- `main` — released/public state.
+- `main` — released state.
 - feature/fix/chore work targets `develop`.
 - validated release preparation promotes `develop` to `main`.
 
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** before submitting changes.
+
 ## Project documents
 
-- **[Architecture](docs/ARCHITECTURE.md)** — runtime model.
-- **[Gemini Spark Desktop Findings](docs/GEMINI_SPARK_DESKTOP_FINDINGS.md)** — product/integration lessons.
-- **[Security Policy](SECURITY.md)** — security reporting.
-- **[Support](SUPPORT.md)** — issue reporting guidance.
-- **[Public Launch Checklist](docs/PUBLIC_LAUNCH_CHECKLIST.md)** — launch readiness.
-- **[Outreach Kit](docs/OUTREACH_KIT.md)** — ready-to-use launch copy.
-- **[Repository Presentation](docs/REPOSITORY_PRESENTATION.md)** — About metadata and visual asset guidance.
+- **[Architecture](docs/ARCHITECTURE.md)** — runtime and security boundaries.
+- **[Gemini Spark Desktop Findings](docs/GEMINI_SPARK_DESKTOP_FINDINGS.md)** — product/integration lessons from the prototype.
+- **[Security Policy](SECURITY.md)** — vulnerability reporting and trust boundaries.
+- **[Public Launch Checklist](docs/PUBLIC_LAUNCH_CHECKLIST.md)** — release/presentation/outreach readiness.
 
 ## Trademark & affiliation notice
 
 Spark Desktop is an independent project and is **not affiliated with, endorsed by, or sponsored by Google**.
 
-"Google", "Gemini", "Gemini Spark", "Google Docs", and "Google Sheets" are used only to identify compatible products and services. All trademarks and product names belong to their respective owners.
+"Google", "Gemini", "Gemini Spark", "Google Docs", and "Google Sheets" are used only to identify the products with which Spark Desktop is designed to interoperate. All trademarks and product names belong to their respective owners.
 
-Spark Desktop should use its own name, iconography, and visual identity and should not imply an official Google partnership.
+The Spark Desktop project should use its own name, iconography, and visual identity and should not imply an official Google partnership.
 
 ## License
 
 See [LICENSE](LICENSE).
 
-The repository currently uses an **all-rights-reserved** license. Source visibility does not by itself make the project open source. Adopting a permissive open-source license is a separate project-owner decision.
+The repository currently uses an **all-rights-reserved** license. Source visibility does not by itself make the project open source. A permissive open-source license can be adopted later only as an explicit project-owner decision.

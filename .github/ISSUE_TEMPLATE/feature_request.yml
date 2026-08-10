@@ -1,25 +1,38 @@
 name: Feature request
-description: Propose a focused improvement within Spark Desktop's narrow scope.
-title: "[Feature]: "
-labels: [enhancement]
+description: Propose an improvement that preserves Spark Desktop's focused product boundary
+title: "feat: "
+labels: ["enhancement"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Spark Desktop is intentionally not a general-purpose browser. Strong proposals explain the workflow problem before proposing UI or implementation.
   - type: textarea
     id: problem
     attributes:
-      label: Problem
-      description: Describe the operator problem, not only the requested control.
+      label: Workflow problem
+      description: What desktop workflow is currently difficult or interrupted?
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
-      label: Proposed solution
+      label: Proposed behavior
+      description: Describe the smallest useful change.
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Product boundary
+      options:
+        - Keeps Spark Desktop focused on Gemini Spark / related Workspace workflows
+        - May expand browser-like behavior and needs product review
+        - Unsure
     validations:
       required: true
   - type: textarea
-    id: scope
+    id: alternatives
     attributes:
-      label: Scope and alternatives
-      description: Explain why this belongs in a focused Spark shell rather than a general-purpose browser.
-    validations:
-      required: true
+      label: Alternatives considered
+      description: Optional — explain simpler alternatives if any.
