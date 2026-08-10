@@ -31,14 +31,20 @@ The frameless shell delegates minimize, maximize/restore, close, and drag operat
 - Dark/light shell theme.
 - Ctrl+T / Ctrl+W / Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+Shift+N / Ctrl+R, including while focus is inside Spark.
 - Persistent tabs, URLs, and theme.
-- Auto-update check on launch.
-- Signed update download/install and restart prompt.
+- Automatic update check on launch.
+- Automatic signed update download and installation when a newer version is available.
 
 ## Updater channel
 
-`develop` is the development source of truth. Production updates are only published from validated `main` releases.
+`develop` is the development source of truth. `main` is the released state.
 
-validated main + manual Release dispatch -> GitHub Actions -> lint/build/Rust check -> Tauri NSIS build -> updater signature -> GitHub Release -> latest.json -> installed app check/download/install.
+Completed engineering work is validated on `develop`. When a release is ready, the version is incremented and validated `develop` is promoted to `main`. A push to `main` automatically starts the signed Release workflow:
+
+`develop green -> version bump -> main -> GitHub Actions -> lint/build/Rust check -> signed Tauri NSIS release -> GitHub Release -> latest.json -> installed app checks on launch -> automatic download/install`.
+
+The installed application does not require the user to download validation installers for routine updates. Validation artifacts are CI-only diagnostics. Production updates are delivered through the signed GitHub Releases updater channel.
+
+On Windows, Tauri's updater installation step exits the running application as part of the installer flow. Spark Desktop requests relaunch after installation when execution returns from the updater API.
 
 ## Updater signing bootstrap
 
