@@ -1,15 +1,35 @@
 # Security Policy
 
+Spark Desktop is a community-built Windows shell that loads Gemini Spark and selected Google Workspace pages inside Microsoft Edge WebView2.
+
 ## Supported versions
 
-Security fixes are applied to the latest published Spark Desktop version.
+Only the latest published release is supported for security fixes. Users should keep automatic updates enabled and move to the newest signed release.
 
 ## Reporting a vulnerability
 
-Do not disclose suspected vulnerabilities in a public issue or discussion. Use the repository's **Security** tab to submit a private vulnerability report through GitHub Security Advisories.
+Do not publish sensitive security details in a public issue or discussion. Use the repository's **Security** tab to submit a private vulnerability report through GitHub Security Advisories.
 
-Include the affected version, Windows version, reproduction steps, expected and observed behavior, impact, and relevant logs or screenshots. Do not include Google credentials, cookies, session tokens, signing keys, or other secrets.
+Include:
 
-## Update trust
+- the affected Spark Desktop version;
+- the Windows version;
+- clear reproduction steps;
+- expected and observed behavior;
+- impact on the local shell, WebView isolation, updater, or Google session handling;
+- sanitized logs or screenshots when useful.
 
-Official builds are published only through this repository's GitHub Releases. The Tauri updater verifies signed update artifacts. Private signing keys must remain in GitHub Actions Secrets and must never be committed or shared in issues.
+Do not include Google credentials, cookies, session tokens, signing keys, or other secrets.
+
+## Security boundaries
+
+- Remote Gemini and Google webviews are not granted Spark Desktop native Tauri capabilities.
+- The application does not attempt to extract Google credentials or authentication tokens.
+- Google session state is stored by the WebView2 application profile used by Spark Desktop.
+- Official builds and update metadata are published only through this repository's GitHub Releases.
+- Production updates use signed Tauri updater artifacts.
+- Private signing keys belong only in GitHub Actions Secrets and must never be committed or shared in issues.
+
+## Third-party services
+
+Gemini, Google Docs, Google Sheets, Google accounts, and their availability, authentication, privacy, and security behavior are controlled by Google and remain subject to Google's own terms and policies.
