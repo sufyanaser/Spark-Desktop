@@ -29,7 +29,7 @@ It is intentionally not a general-purpose browser.
 
 `develop` is the development source of truth. Production updates are only published from validated `main` releases.
 
-main push -> GitHub Actions -> lint/build/Rust check -> Tauri NSIS build -> updater signature -> GitHub Release -> latest.json -> installed app check/download/install.
+validated main + manual Release dispatch -> GitHub Actions -> lint/build/Rust check -> Tauri NSIS build -> updater signature -> GitHub Release -> latest.json -> installed app check/download/install.
 
 ## Required manual bootstrap before first release
 
