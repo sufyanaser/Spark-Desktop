@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: spark-desktop-release
+  cancel-in-progress: false
+
+jobs:
+  publish-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Validate updater configuration
+        shell: pwsh
+        run: |
+          $config = Get-Content 'src-tauri/tauri.conf.json' -Raw | ConvertFrom-Json
+          if ($config.plugins.updater.pubkey -eq 'REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY') {
+            throw 'Updater public key is not configured.'
+          }
+          if (-not $env:TAURI_SIGNING_PRIVATE_KEY) {
+            throw 'TAURI_SIGNING_PRIVATE_KEY secret is missing.'
+          }
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+
+      - name: Install frontend dependencies
+        run: npm install
+      - name: Verify version consistency
+        run: npm run verify:versions
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Frontend build
+        run: npm run build
+
+      - name: Rust check
+        working-directory: src-tauri
+        run: cargo check
+
+      - name: Build and publish signed Tauri release
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: 'Spark Desktop v__VERSION__'
+          releaseBody: 'Automatic Spark Desktop update release.'
+          releaseDraft: false
+          prerelease: false
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true
