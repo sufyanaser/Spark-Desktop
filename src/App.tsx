@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { activateTab, closeTabWebview, createShellWindow, reloadTab, resizeTab } from './lib/webviews';
+import {
+  activateTab,
+  closeTabWebview,
+  controlCurrentWindow,
+  createShellWindow,
+  reloadTab,
+  resizeTab,
+  type WindowControlAction,
+} from './lib/webviews';
 import { loadWindowState, makeTab, registerWindow, saveWindowState, unregisterWindow } from './lib/storage';
 import { restartForUpdate, runAutoUpdate } from './lib/updater';
-import type { PersistedWindowState, SparkTab, UpdateUiState } from './types';
+import type { OpenUrlRequest, PersistedWindowState, SparkTab, TabTitleChanged, UpdateUiState } from './types';
 import './styles.css';
 
 function UpdatePill({ state }: { state: UpdateUiState }) {
@@ -72,6 +81,16 @@ export default function App() {
     await openTab(tab, [...current.tabs, tab], current);
   }, [openTab]);
 
+  const addUrlTab = useCallback(
+    async (url: string) => {
+      if (!/^https?:\/\//i.test(url)) return;
+      const current = stateRef.current;
+      const tab = makeTab(url);
+      await openTab(tab, [...current.tabs, tab], current);
+    },
+    [openTab],
+  );
+
   const closeTab = useCallback(
     async (tab: SparkTab) => {
       const current = stateRef.current;
@@ -105,6 +124,31 @@ export default function App() {
     const nextTheme = current.theme === 'dark' ? 'light' : 'dark';
     commitState({ ...current, theme: nextTheme });
   }, [commitState]);
+
+  const runWindowAction = useCallback(async (action: WindowControlAction) => {
+    try {
+      await controlCurrentWindow(action);
+    } catch (error) {
+      setRuntimeError(error instanceof Error ? error.message : String(error));
+    }
+  }, []);
+
+  const createNewWindow = useCallback(async () => {
+    try {
+      await createShellWindow();
+    } catch (error) {
+      setRuntimeError(error instanceof Error ? error.message : String(error));
+    }
+  }, []);
+
+  const beginWindowDrag = useCallback(
+    (event: ReactMouseEvent<HTMLElement>) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      void runWindowAction('start-dragging');
+    },
+    [runWindowAction],
+  );
 
   useEffect(() => {
     stateRef.current = state;
@@ -149,6 +193,41 @@ export default function App() {
 
   useEffect(() => {
     let disposed = false;
+    let unlistenOpenUrl: (() => void) | undefined;
+    let unlistenTitle: (() => void) | undefined;
+
+    void listen<OpenUrlRequest>('spark-open-url', (event) => {
+      if (!disposed) void addUrlTab(event.payload.url);
+    }).then((unlisten) => {
+      if (disposed) unlisten();
+      else unlistenOpenUrl = unlisten;
+    });
+
+    void listen<TabTitleChanged>('spark-tab-title', (event) => {
+      if (disposed) return;
+      const title = event.payload.title.trim();
+      if (!title) return;
+      const current = stateRef.current;
+      const target = current.tabs.find((tab) => tab.label === event.payload.label);
+      if (!target || target.title === title) return;
+      commitState({
+        ...current,
+        tabs: current.tabs.map((tab) => (tab.label === event.payload.label ? { ...tab, title } : tab)),
+      });
+    }).then((unlisten) => {
+      if (disposed) unlisten();
+      else unlistenTitle = unlisten;
+    });
+
+    return () => {
+      disposed = true;
+      unlistenOpenUrl?.();
+      unlistenTitle?.();
+    };
+  }, [addUrlTab, commitState]);
+
+  useEffect(() => {
+    let disposed = false;
     let unlistenShortcut: (() => void) | undefined;
 
     const runShortcut = (action: string) => {
@@ -166,7 +245,7 @@ export default function App() {
       }
 
       if (action === 'new-window') {
-        void createShellWindow();
+        void createNewWindow();
         return;
       }
 
@@ -198,14 +277,19 @@ export default function App() {
       disposed = true;
       unlistenShortcut?.();
     };
-  }, [addTab, closeTab, openTab]);
+  }, [addTab, closeTab, createNewWindow, openTab]);
 
   const activeTab = state.tabs.find((tab) => tab.id === state.activeTabId) ?? state.tabs[0];
 
   return (
     <div className="app-shell">
-      <header className="topbar" data-tauri-drag-region>
-        <div className="tabs" data-tauri-drag-region>
+      <header className="topbar">
+        <div
+          className="tabs"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) beginWindowDrag(event);
+          }}
+        >
           {state.tabs.map((tab) => (
             <button
               key={tab.id}
@@ -243,22 +327,29 @@ export default function App() {
           </button>
         </div>
 
+        <div
+          className="window-drag-area"
+          aria-hidden="true"
+          onMouseDown={beginWindowDrag}
+          onDoubleClick={() => void runWindowAction('toggle-maximize')}
+        />
+
         <div className="top-actions">
           <UpdatePill state={updateState} />
-          <button className="action-button" type="button" onClick={() => void createShellWindow()}>
+          <button className="action-button" type="button" onClick={() => void createNewWindow()}>
             New window
           </button>
           <button className="icon-button" type="button" aria-label="Toggle theme" onClick={toggleTheme}>
             {state.theme === 'dark' ? '☾' : '☀'}
           </button>
           <div className="window-controls">
-            <button type="button" aria-label="Minimize" onClick={() => void appWindow.minimize()}>
+            <button type="button" aria-label="Minimize" onClick={() => void runWindowAction('minimize')}>
               —
             </button>
-            <button type="button" aria-label="Maximize" onClick={() => void appWindow.toggleMaximize()}>
+            <button type="button" aria-label="Maximize" onClick={() => void runWindowAction('toggle-maximize')}>
               □
             </button>
-            <button className="close-window" type="button" aria-label="Close" onClick={() => void appWindow.close()}>
+            <button className="close-window" type="button" aria-label="Close" onClick={() => void runWindowAction('close')}>
               ×
             </button>
           </div>

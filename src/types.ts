@@ -4,6 +4,7 @@ export type SparkTab = {
   id: string;
   label: string;
   title: string;
+  url: string;
   createdAt: number;
 };
 
@@ -11,6 +12,16 @@ export type PersistedWindowState = {
   tabs: SparkTab[];
   activeTabId: string | null;
   theme: ThemeMode;
+};
+
+export type OpenUrlRequest = {
+  url: string;
+  sourceLabel: string;
+};
+
+export type TabTitleChanged = {
+  label: string;
+  title: string;
 };
 
 export type UpdateUiState =
