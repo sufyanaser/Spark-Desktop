@@ -123,7 +123,7 @@ Availability and behavior of Gemini Spark and Google Workspace are controlled by
 ## Development
 
 ```bash
-npm install
+npm ci
 npm run lint
 npm run build
 npm run tauri dev

@@ -22,7 +22,7 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci
       - name: Verify version consistency
         run: npm run verify:versions
       - name: Lint
