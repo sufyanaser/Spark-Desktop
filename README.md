@@ -43,8 +43,8 @@ npm run tauri dev
 
 The installed application checks the latest GitHub Release on launch. After Windows compatibility validation, a release is dispatched manually from `main`, built by GitHub Actions, signed with the Tauri updater key, and published with updater metadata.
 
-Before the first production release, configure the updater public key and GitHub Actions signing secrets as documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+The updater public key and GitHub Actions signing secrets are configured. Keep the private signing key backed up securely; losing it prevents future updates for installed copies.
 
 ## Current status
 
-Implementation is ready for repository bootstrap and Windows/Gemini compatibility validation. The first production release is intentionally blocked until the updater signing key is configured and Google login/Spark behavior is verified inside WebView2 on Windows.
+The signed Windows release pipeline is configured. Production releases remain manually dispatched from validated `main` after Windows/Gemini compatibility verification.

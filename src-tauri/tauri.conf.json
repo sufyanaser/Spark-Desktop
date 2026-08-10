@@ -57,7 +57,7 @@
       "endpoints": [
         "https://github.com/sufyanaser/Spark-Desktop/releases/latest/download/latest.json"
       ],
-      "pubkey": "REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY4Mjk5RDcxMENGMjQ2MzIKUldReVJ2SU1jWjBwK0x4R2JCZG9MN1kvWEY3Z2toYnQ1bnZxTE43eEFBZUR0WmJkazhTQ21zc1oK",
       "windows": {
         "installMode": "passive"
       }
