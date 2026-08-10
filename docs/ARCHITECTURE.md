@@ -31,11 +31,8 @@ It is intentionally not a general-purpose browser.
 
 validated main + manual Release dispatch -> GitHub Actions -> lint/build/Rust check -> Tauri NSIS build -> updater signature -> GitHub Release -> latest.json -> installed app check/download/install.
 
-## Required manual bootstrap before first release
+## Updater signing bootstrap
 
-1. Generate a Tauri updater signing key pair locally.
-2. Replace `REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY` in `src-tauri/tauri.conf.json` with the public key.
-3. Add the private key to GitHub Actions secret `TAURI_SIGNING_PRIVATE_KEY`.
-4. If the key has a password, add it to `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+The updater public key is committed in `src-tauri/tauri.conf.json`. GitHub Actions stores the password-protected private key and password in `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` repository secrets.
 
-Never commit the private key.
+Never commit or rotate the private key without an explicit updater-key migration plan. Losing it prevents future updates for existing installations.
