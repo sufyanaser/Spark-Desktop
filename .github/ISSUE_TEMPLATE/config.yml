@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Support guidance
+    url: https://github.com/sufyanaser/Spark-Desktop/blob/main/SUPPORT.md
+    about: Check support guidance before filing an issue.
+  - name: Security policy
+    url: https://github.com/sufyanaser/Spark-Desktop/blob/main/SECURITY.md
+    about: Do not publish sensitive security reports as public issues.
