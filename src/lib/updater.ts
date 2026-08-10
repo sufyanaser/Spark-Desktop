@@ -1,8 +1,6 @@
-import { check, type Update } from '@tauri-apps/plugin-updater';
+import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import type { UpdateUiState } from '../types';
-
-let pendingUpdate: Update | null = null;
 
 export async function runAutoUpdate(
   setState: (state: UpdateUiState) => void,
@@ -19,7 +17,7 @@ export async function runAutoUpdate(
     let total: number | undefined;
     setState({ kind: 'downloading', version: update.version, percent: null });
 
-    await update.download((event) => {
+    await update.downloadAndInstall((event) => {
       if (event.event === 'Started') {
         total = event.data.contentLength ?? undefined;
         downloaded = 0;
@@ -30,18 +28,9 @@ export async function runAutoUpdate(
       }
     });
 
-    pendingUpdate = update;
     setState({ kind: 'ready', version: update.version });
+    await relaunch();
   } catch (error) {
-    pendingUpdate = null;
     setState({ kind: 'error', message: error instanceof Error ? error.message : String(error) });
   }
-}
-
-export async function restartForUpdate(): Promise<void> {
-  if (!pendingUpdate) return;
-  await pendingUpdate.install();
-  // On Windows the installer exits the app during install. On platforms where
-  // install() returns normally, relaunch immediately into the updated build.
-  await relaunch();
 }

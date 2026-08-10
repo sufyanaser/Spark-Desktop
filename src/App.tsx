@@ -12,7 +12,7 @@ import {
   type WindowControlAction,
 } from './lib/webviews';
 import { loadWindowState, makeTab, registerWindow, saveWindowState, unregisterWindow } from './lib/storage';
-import { restartForUpdate, runAutoUpdate } from './lib/updater';
+import { runAutoUpdate } from './lib/updater';
 import type { OpenUrlRequest, PersistedWindowState, SparkTab, TabTitleChanged, UpdateUiState } from './types';
 import './styles.css';
 
@@ -29,8 +29,8 @@ function UpdatePill({ state }: { state: UpdateUiState }) {
 
   if (state.kind === 'ready') {
     return (
-      <button className="update-pill update-ready" type="button" onClick={() => void restartForUpdate()}>
-        Restart to update
+      <button className="update-pill update-ready" type="button" disabled>
+        Applying update…
       </button>
     );
   }
