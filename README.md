@@ -2,6 +2,13 @@
 
 A minimal Windows desktop shell for **Gemini Spark** with native tabs, multi-window support, persistent Google session state, dark/light shell themes, and signed GitHub-native automatic updates.
 
+[![Latest release](https://img.shields.io/github/v/release/sufyanaser/Spark-Desktop?display_name=tag&sort=semver&label=release&color=2563eb)](https://github.com/sufyanaser/Spark-Desktop/releases/latest)
+[![CI](https://github.com/sufyanaser/Spark-Desktop/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/sufyanaser/Spark-Desktop/actions/workflows/ci.yml)
+![Windows](https://img.shields.io/badge/platform-Windows-0f172a)
+![Tauri](https://img.shields.io/badge/Tauri-v2-24c8db)
+
+**[Download the latest signed Windows release](https://github.com/sufyanaser/Spark-Desktop/releases/latest)**
+
 ## Scope
 
 Spark Desktop intentionally stays small:
@@ -17,6 +24,14 @@ Spark Desktop intentionally stays small:
 
 It is **not** a general-purpose browser: no address bar, bookmarks, history manager, extensions, or custom Gemini UI.
 
+## Install on Windows
+
+1. Open the [latest GitHub Release](https://github.com/sufyanaser/Spark-Desktop/releases/latest).
+2. Download `Spark.Desktop_<version>_x64-setup.exe`.
+3. Run the installer and launch **Spark Desktop**.
+
+The Release also publishes the updater signature and `latest.json`. Installed copies verify signed updates before applying them. Spark Desktop is currently verified on 64-bit Windows with Microsoft Edge WebView2.
+
 ## Stack
 
 - Tauri 2
@@ -27,7 +42,7 @@ It is **not** a general-purpose browser: no address bar, bookmarks, history mana
 ## Development
 
 ```bash
-npm install
+npm ci
 npm run lint
 npm run build
 npm run tauri dev
@@ -47,6 +62,21 @@ Every completed release promoted to `main` is published automatically by GitHub 
 On Windows the passive updater may briefly show installer progress while applying the signed update. The application then exits/relaunches as required by the Windows updater flow.
 
 The updater public key and GitHub Actions signing secrets are configured. Keep the private signing key backed up securely; losing it prevents future trusted updates for installed copies.
+
+## Privacy and security
+
+- Spark Desktop opens the official Gemini Spark website; it does not replace or proxy Gemini.
+- Google session data is stored in the local WebView2 profile used by the application.
+- The application does not implement its own telemetry, account system, browsing history, or cloud synchronization.
+- Only install builds from this repository's [Releases](https://github.com/sufyanaser/Spark-Desktop/releases) page.
+- Report suspected vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+
+## Support and contributing
+
+- Use the bug form for reproducible product failures.
+- Use the feature form for changes that remain inside the intentionally narrow product scope.
+- Development changes target `develop`; release promotion to `main` happens only after validation.
+- See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
 ## Current status
 

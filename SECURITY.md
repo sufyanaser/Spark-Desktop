@@ -8,23 +8,27 @@ Only the latest published release is supported for security fixes. Users should 
 
 ## Reporting a vulnerability
 
-Please do **not** publish sensitive security details in a public issue.
+Do not publish sensitive security details in a public issue or discussion. Use the repository's **Security** tab to submit a private vulnerability report through GitHub Security Advisories.
 
-Report vulnerabilities privately to the repository owner through GitHub's private security reporting features when available. Include:
+Include:
 
-- affected Spark Desktop version;
-- Windows version;
+- the affected Spark Desktop version;
+- the Windows version;
 - clear reproduction steps;
-- expected vs. actual behavior;
-- whether the issue affects the local shell, WebView isolation, updater, or Google session handling.
+- expected and observed behavior;
+- impact on the local shell, WebView isolation, updater, or Google session handling;
+- sanitized logs or screenshots when useful.
+
+Do not include Google credentials, cookies, session tokens, signing keys, or other secrets.
 
 ## Security boundaries
 
-- Remote Gemini/Google webviews are not granted Spark Desktop native Tauri capabilities.
+- Remote Gemini and Google webviews are not granted Spark Desktop native Tauri capabilities.
 - The application does not attempt to extract Google credentials or authentication tokens.
 - Google session state is stored by the WebView2 application profile used by Spark Desktop.
-- Production updates are delivered through signed Tauri updater artifacts published in GitHub Releases.
-- Updater private signing keys must never be committed to the repository.
+- Official builds and update metadata are published only through this repository's GitHub Releases.
+- Production updates use signed Tauri updater artifacts.
+- Private signing keys belong only in GitHub Actions Secrets and must never be committed or shared in issues.
 
 ## Third-party services
 

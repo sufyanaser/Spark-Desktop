@@ -1,0 +1,25 @@
+name: Feature request
+description: Propose a focused improvement within Spark Desktop's narrow scope.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the operator problem, not only the requested control.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and alternatives
+      description: Explain why this belongs in a focused Spark shell rather than a general-purpose browser.
+    validations:
+      required: true
