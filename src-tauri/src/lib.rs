@@ -11,6 +11,38 @@ const SHORTCUTS: [&str; 6] = [
     "ctrl+r",
 ];
 
+const SPARK_WORKSPACE_LINK_ROUTING_SCRIPT: &str = r#"
+(() => {
+  if (window.location.origin !== 'https://gemini.google.com') return;
+
+  const isWorkspaceUrl = (value) => {
+    try {
+      const url = new URL(String(value), window.location.href);
+      return url.origin === 'https://docs.google.com' &&
+        (url.pathname.startsWith('/document/') || url.pathname.startsWith('/spreadsheets/'));
+    } catch {
+      return false;
+    }
+  };
+
+  document.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return;
+    const anchor = event.target.closest('a[href]');
+    if (!anchor || !isWorkspaceUrl(anchor.href)) return;
+    anchor.target = '_self';
+  }, true);
+
+  const nativeOpen = window.open.bind(window);
+  window.open = function(url, target, features) {
+    if (url && isWorkspaceUrl(url)) {
+      window.location.assign(new URL(String(url), window.location.href).href);
+      return window;
+    }
+    return nativeOpen(url, target, features);
+  };
+})();
+"#;
+
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct OpenUrlRequest {
@@ -155,48 +187,57 @@ async fn create_tab_webview(
         .get_window(&parent_label)
         .ok_or_else(|| format!("Parent window '{parent_label}' was not found."))?;
 
-    let popup_window = parent.clone();
-    let popup_source_label = label.clone();
-    let navigation_window = parent.clone();
-    let navigation_source_label = label.clone();
+    let route_workspace_navigation = is_spark_url(&parsed_url);
     let title_window = parent.clone();
     let title_label = label.clone();
-    let route_workspace_navigation = is_spark_url(&parsed_url);
 
-    let builder = tauri::webview::WebviewBuilder::new(
+    let mut builder = tauri::webview::WebviewBuilder::new(
         label.clone(),
         tauri::WebviewUrl::External(parsed_url),
     )
     .focused(true)
     .incognito(false)
     .devtools(false)
-    .zoom_hotkeys_enabled(true)
-    .on_new_window(move |new_url, _features| {
-        if new_url.scheme() == "https" || new_url.scheme() == "http" {
-            let _ = popup_window.emit(
-                "spark-open-url",
-                OpenUrlRequest {
-                    url: new_url.to_string(),
-                    source_label: popup_source_label.clone(),
-                },
-            );
-        }
-        tauri::webview::NewWindowResponse::Deny
-    })
-    .on_navigation(move |new_url| {
-        if route_workspace_navigation && is_workspace_document(new_url) {
-            let _ = navigation_window.emit(
-                "spark-open-url",
-                OpenUrlRequest {
-                    url: new_url.to_string(),
-                    source_label: navigation_source_label.clone(),
-                },
-            );
-            return false;
-        }
-        true
-    })
-    .on_document_title_changed(move |_webview, title| {
+    .zoom_hotkeys_enabled(true);
+
+    if route_workspace_navigation {
+        let popup_window = parent.clone();
+        let popup_source_label = label.clone();
+        let navigation_window = parent.clone();
+        let navigation_source_label = label.clone();
+
+        builder = builder
+            .initialization_script(SPARK_WORKSPACE_LINK_ROUTING_SCRIPT)
+            .on_new_window(move |new_url, _features| {
+                if is_workspace_document(&new_url) || is_spark_url(&new_url) {
+                    let _ = popup_window.emit(
+                        "spark-open-url",
+                        OpenUrlRequest {
+                            url: new_url.to_string(),
+                            source_label: popup_source_label.clone(),
+                        },
+                    );
+                    tauri::webview::NewWindowResponse::Deny
+                } else {
+                    tauri::webview::NewWindowResponse::Allow
+                }
+            })
+            .on_navigation(move |new_url| {
+                if is_workspace_document(new_url) {
+                    let _ = navigation_window.emit(
+                        "spark-open-url",
+                        OpenUrlRequest {
+                            url: new_url.to_string(),
+                            source_label: navigation_source_label.clone(),
+                        },
+                    );
+                    return false;
+                }
+                true
+            });
+    }
+
+    builder = builder.on_document_title_changed(move |_webview, title| {
         if !title.trim().is_empty() {
             let _ = title_window.emit(
                 "spark-tab-title",
