@@ -36,6 +36,8 @@ jobs:
             Write-Host "$tag is new. Continuing with the signed application release."
           }
 
+          exit 0
+
       - name: Existing version — no release required
         if: steps.release_state.outputs.release_needed == 'false'
         shell: pwsh
