@@ -41,7 +41,7 @@ npm run tauri dev
 
 ## Auto-update
 
-The installed application checks the latest GitHub Release on launch. A release from `main` is built by GitHub Actions, signed with the Tauri updater key, and published with updater metadata.
+The installed application checks the latest GitHub Release on launch. After Windows compatibility validation, a release is dispatched manually from `main`, built by GitHub Actions, signed with the Tauri updater key, and published with updater metadata.
 
 Before the first production release, configure the updater public key and GitHub Actions signing secrets as documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
