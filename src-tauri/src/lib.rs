@@ -119,7 +119,7 @@ fn control_window(app: tauri::AppHandle, window_label: String, action: String) -
                 window.maximize()
             }
         }
-        "close" => window.close(),
+        "close" => window.destroy(),
         "start-dragging" => window.start_dragging(),
         _ => return Err(format!("Unsupported window action '{action}'.")),
     }
