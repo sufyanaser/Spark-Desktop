@@ -150,7 +150,9 @@ See **[CONTRIBUTING.md](CONTRIBUTING.md)** before submitting changes.
 - **[Architecture](docs/ARCHITECTURE.md)** — runtime and security boundaries.
 - **[Gemini Spark Desktop Findings](docs/GEMINI_SPARK_DESKTOP_FINDINGS.md)** — product/integration lessons from the prototype.
 - **[Security Policy](SECURITY.md)** — vulnerability reporting and trust boundaries.
+- **[Support](SUPPORT.md)** — how to report reproducible issues without exposing private Google data.
 - **[Public Launch Checklist](docs/PUBLIC_LAUNCH_CHECKLIST.md)** — release/presentation/outreach readiness.
+- **[Outreach Kit](docs/OUTREACH_KIT.md)** — ready-to-use technical/community launch copy.
 
 ## Trademark & affiliation notice
 
