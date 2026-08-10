@@ -19,17 +19,43 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Detect whether this version needs publishing
+        id: release_state
+        shell: pwsh
+        run: |
+          $package = Get-Content 'package.json' -Raw | ConvertFrom-Json
+          $tag = "v$($package.version)"
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+          git ls-remote --exit-code --tags origin "refs/tags/$tag" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            "release_needed=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Host "$tag already exists. No duplicate application release is required."
+          } else {
+            "release_needed=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Host "$tag is new. Continuing with the signed application release."
+          }
+
+      - name: Existing version — no release required
+        if: steps.release_state.outputs.release_needed == 'false'
+        shell: pwsh
+        run: Write-Host "The current app version is already published; this main update does not create another release."
+
       - uses: actions/setup-node@v6
+        if: steps.release_state.outputs.release_needed == 'true'
         with:
           node-version: lts/*
 
       - uses: dtolnay/rust-toolchain@stable
+        if: steps.release_state.outputs.release_needed == 'true'
 
       - uses: swatinem/rust-cache@v2
+        if: steps.release_state.outputs.release_needed == 'true'
         with:
           workspaces: './src-tauri -> target'
 
       - name: Validate updater configuration
+        if: steps.release_state.outputs.release_needed == 'true'
         shell: pwsh
         run: |
           $config = Get-Content 'src-tauri/tauri.conf.json' -Raw | ConvertFrom-Json
@@ -43,22 +69,28 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
 
       - name: Install frontend dependencies
-        run: npm install
+        if: steps.release_state.outputs.release_needed == 'true'
+        run: npm ci
 
       - name: Verify version consistency
+        if: steps.release_state.outputs.release_needed == 'true'
         run: npm run verify:versions
 
       - name: Lint
+        if: steps.release_state.outputs.release_needed == 'true'
         run: npm run lint
 
       - name: Frontend build
+        if: steps.release_state.outputs.release_needed == 'true'
         run: npm run build
 
       - name: Rust check
+        if: steps.release_state.outputs.release_needed == 'true'
         working-directory: src-tauri
         run: cargo check
 
       - name: Build and publish signed Tauri release
+        if: steps.release_state.outputs.release_needed == 'true'
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
