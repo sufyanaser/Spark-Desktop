@@ -29,6 +29,161 @@
 html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--bg); }
 button { font: inherit; }
 
+.startup-intro {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #0f172a;
+  color: #ffffff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  isolation: isolate;
+}
+
+.intro-viewport {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  animation: cameraZoomIn 1.1s cubic-bezier(0.65, 0, 0.8, 0) 2.8s forwards;
+}
+
+.glow-bg {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(
+    circle,
+    rgba(66, 133, 244, 0.5) 0%,
+    rgba(156, 39, 176, 0.3) 45%,
+    rgba(255, 179, 0, 0.15) 70%,
+    transparent 80%
+  );
+  filter: blur(55px);
+  border-radius: 50%;
+  animation: pulseGlow 2.5s infinite alternate ease-in-out;
+}
+
+.spark-icon {
+  width: 110px;
+  height: 110px;
+  z-index: 2;
+  transform-origin: center center;
+  animation:
+    scaleSpark 2s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+    rotateAndGlow 1.1s cubic-bezier(0.4, 0, 0.2, 1) 2.8s forwards;
+}
+
+.spark-shape {
+  animation: sparkShapeFlash 1.1s ease 2.8s forwards;
+}
+
+.brand-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+  animation: fadeOutText 0.4s ease 2.8s forwards;
+}
+
+.brand-title {
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 600;
+  margin-top: 22px;
+  letter-spacing: 1.2px;
+  opacity: 0;
+  transform: translateY(12px);
+  animation: fadeInUp 0.8s ease 1.5s forwards;
+}
+
+.brand-sub {
+  color: #94a3b8;
+  font-size: 14px;
+  margin-top: 6px;
+  opacity: 0;
+  transform: translateY(12px);
+  animation: fadeInUp 0.8s ease 1.8s forwards;
+}
+
+.flash-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+  animation: flashTransition 0.8s ease 3.5s forwards;
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(0.85); opacity: 0.5; }
+  100% { transform: scale(1.3); opacity: 0.9; }
+}
+
+@keyframes scaleSpark {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOutText {
+  to { opacity: 0; transform: translateY(-10px); filter: blur(6px); }
+}
+
+@keyframes rotateAndGlow {
+  0% {
+    transform: rotate(0deg) scale(1);
+    filter: drop-shadow(0 0 15px rgba(66, 133, 244, 0.6));
+  }
+  50% {
+    transform: rotate(90deg) scale(1.15);
+    filter: drop-shadow(0 0 45px rgba(156, 39, 176, 0.9)) drop-shadow(0 0 25px rgba(255, 179, 0, 0.7));
+  }
+  100% {
+    transform: rotate(180deg) scale(1.3);
+    filter: drop-shadow(0 0 60px rgba(255, 255, 255, 1));
+  }
+}
+
+@keyframes sparkShapeFlash {
+  0%, 55% { fill: url(#gemini-grad); }
+  100% { fill: #ffffff; }
+}
+
+@keyframes cameraZoomIn {
+  0% {
+    transform: scale(1);
+    filter: blur(0);
+  }
+  50% {
+    filter: blur(10px) contrast(140%);
+  }
+  100% {
+    transform: scale(40);
+    filter: blur(28px) contrast(200%);
+    opacity: 0.95;
+  }
+}
+
+@keyframes flashTransition {
+  0% { opacity: 0; }
+  45% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .app-shell { width: 100%; height: 100%; background: var(--bg); color: var(--text); }
 
 .topbar {
