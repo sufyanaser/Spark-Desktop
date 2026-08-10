@@ -23,12 +23,6 @@ jobs:
           workspaces: './src-tauri -> target'
       - name: Install frontend dependencies
         run: npm install
-      - name: Preserve generated npm lockfile
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-lockfile
-          path: package-lock.json
-          if-no-files-found: error
       - name: Verify version consistency
         run: npm run verify:versions
       - name: Lint
@@ -38,3 +32,11 @@ jobs:
       - name: Rust check
         working-directory: src-tauri
         run: cargo check
+      - name: Build Windows validation installer
+        run: npm run tauri build -- --config src-tauri/tauri.validation.conf.json
+      - name: Upload Windows validation installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: spark-desktop-windows-validation
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
