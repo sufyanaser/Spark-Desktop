@@ -18,14 +18,14 @@ Include:
 - exact steps to reproduce;
 - expected behavior;
 - actual behavior;
-- whether the issue occurs in Spark, Docs, Sheets, window controls, session persistence, or the updater;
+- whether the issue occurs in Spark, Docs, Sheets, window controls, or the updater;
 - screenshots only when they do not expose private account or document information.
 
 ## Google service issues
 
 Spark Desktop embeds Google-owned web experiences. Outages, account access, Gemini feature availability, Google Workspace behavior, and Google authentication are controlled by Google.
 
-If the same problem occurs in Gemini, Docs, or Sheets in a normal browser, report it through the appropriate Google support or feedback channel rather than as a Spark Desktop shell bug.
+If the same problem occurs in Gemini/Docs/Sheets in a normal browser, report it through the appropriate Google support or feedback channel rather than as a Spark Desktop shell bug.
 
 ## Security
 
