@@ -10,9 +10,9 @@ It is intentionally not a general-purpose browser.
 - Tauri 2 native window.
 - React shell occupies only the 40px top bar.
 - Each tab is a child WebView2 webview below the top bar.
-- Child tab webviews are created by the Rust host so native WebView2 new-window requests can be intercepted before Windows opens an external browser.
+- Child tab webviews are created by the Rust host so native WebView2 new-window requests can be routed according to the trusted Spark/Workspace boundary.
 - Spark tabs intentionally use Tauri's default application WebView2 data store (no per-tab data-directory override), preserving a shared Google session across tabs and shell windows.
-- Google Docs and Sheets links opened by Spark are routed into new internal tabs in the same Spark Desktop window instead of Chrome or another external browser.
+- Google Drive, Docs, and Sheets links opened by Spark are intercepted by the Rust host and handed to Google Chrome. This avoids relying on unsupported Workspace behavior inside an embedded WebView2 surface.
 - New shell windows can host their own child webviews while sharing the same application session store.
 - Remote content webviews are excluded from Tauri capabilities; only bundled shell webviews receive native permissions.
 
@@ -25,7 +25,7 @@ The frameless shell delegates minimize, maximize/restore, close, and drag operat
 - New Spark tab.
 - Close tab.
 - New window.
-- Internal Google Docs / Sheets tabs opened from Spark.
+- Explicit Google Drive / Docs / Sheets handoff to Google Chrome.
 - Native minimize / maximize / close controls.
 - Drag-to-move frameless window and double-click title-bar maximize/restore.
 - Dark/light shell theme.

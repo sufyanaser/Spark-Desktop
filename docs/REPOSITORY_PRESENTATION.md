@@ -21,8 +21,8 @@ The next high-value presentation asset is a public-safe demo, not more decorativ
 Recommended assets:
 
 1. one clean hero screenshot showing Spark + the native tab bar;
-2. one screenshot showing a Google Sheet or Doc opened as an internal tab using non-sensitive demo content;
-3. one 20–40 second GIF/video showing Spark → Workspace tab handoff → tab switching → window controls;
+2. one screenshot showing a Google Sheet or Doc handed off to Chrome using non-sensitive demo content;
+3. one 20–40 second GIF/video showing Spark → Chrome Workspace handoff → Spark tab switching → window controls;
 4. optional simple architecture diagram generated from the Mermaid model in README.
 
 Do not publish screenshots containing private accounts, documents, emails, prompts, avatars, phone numbers, or other personal information.
