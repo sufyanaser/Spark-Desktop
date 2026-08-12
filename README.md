@@ -24,7 +24,7 @@ The shell adds only the desktop behavior that improves that workflow:
 - multiple Spark tabs in one native window;
 - additional Spark windows;
 - persistent Google session state;
-- Google Docs and Sheets opened by Spark stay inside Spark Desktop tabs;
+- Google Drive, Docs, and Sheets links opened by Spark hand off to Google Chrome for reliable Workspace behavior;
 - native frameless window controls and drag behavior;
 - keyboard-first tab controls;
 - dark/light application chrome;
@@ -38,12 +38,11 @@ It intentionally does **not** add an address bar, bookmarks, browser history, ex
 flowchart LR
     A[Windows / Tauri shell] --> B[Gemini Spark tab]
     A --> C[Gemini Spark tab]
-    A --> D[Google Docs tab]
-    A --> E[Google Sheets tab]
+    B --> D[Google Chrome]
+    C --> D
     B --> F[Google-owned web experience]
     C --> F
-    D --> G[Google Workspace]
-    E --> G
+    D --> G[Google Drive / Docs / Sheets]
 ```
 
 Spark Desktop owns the **desktop shell**. Google continues to own the **Gemini and Workspace web experiences, authentication, content, and service behavior**.
@@ -53,10 +52,10 @@ Spark Desktop owns the **desktop shell**. Google continues to own the **Gemini a
 | Area | Behavior |
 |---|---|
 | Spark | Loads `https://gemini.google.com/spark` directly |
-| Tabs | Multiple internal Spark / Workspace tabs |
+| Tabs | Multiple internal Spark tabs |
 | Windows | Multiple native Spark Desktop windows |
 | Session | Shared persistent WebView2 application profile |
-| Workspace | Docs / Sheets opened from Spark remain in-app |
+| Workspace | Drive / Docs / Sheets links opened from Spark launch in Google Chrome |
 | Window chrome | Native minimize, maximize/restore, close, drag-to-move |
 | Shortcuts | `Ctrl+T`, `Ctrl+W`, `Ctrl+Tab`, `Ctrl+Shift+Tab`, `Ctrl+Shift+N`, `Ctrl+R` |
 | Updates | Signed GitHub Releases + Tauri automatic updater |
@@ -80,16 +79,17 @@ Tauri 2 native window
 │  └─ 40px top bar: tabs + native window controls
 └─ Child WebView2 instances
    ├─ Gemini Spark
-   ├─ Gemini Spark
-   ├─ Google Docs
-   └─ Google Sheets
+   └─ Gemini Spark
+
+Google Chrome
+└─ Google Drive / Docs / Sheets opened from Spark
 ```
 
 Key decisions:
 
 - remote Gemini/Google content does not receive Spark Desktop native Tauri capabilities;
 - tabs share the application WebView2 data store for consistent Google session behavior;
-- Workspace routing is deliberately narrow instead of becoming a general browser;
+- Workspace routing is deliberately narrow and hands Drive, Docs, and Sheets to Chrome instead of emulating a general browser;
 - application releases are delivered through signed updater artifacts.
 
 See **[Architecture](docs/ARCHITECTURE.md)** for the implementation model.

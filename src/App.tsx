@@ -7,6 +7,7 @@ import {
   closeTabWebview,
   controlCurrentWindow,
   createShellWindow,
+  openGoogleWorkspaceInChrome,
   reloadTab,
   resizeTab,
   type WindowControlAction,
@@ -241,6 +242,7 @@ export default function App() {
   useEffect(() => {
     let disposed = false;
     let unlistenOpenUrl: (() => void) | undefined;
+    let unlistenGoogleWorkspace: (() => void) | undefined;
     let unlistenTitle: (() => void) | undefined;
 
     void listen<OpenUrlRequest>('spark-open-url', (event) => {
@@ -248,6 +250,16 @@ export default function App() {
     }).then((unlisten) => {
       if (disposed) unlisten();
       else unlistenOpenUrl = unlisten;
+    });
+
+    void listen<OpenUrlRequest>('spark-open-google-workspace', (event) => {
+      if (disposed) return;
+      void openGoogleWorkspaceInChrome(event.payload.url).catch((error) => {
+        setRuntimeError(error instanceof Error ? error.message : String(error));
+      });
+    }).then((unlisten) => {
+      if (disposed) unlisten();
+      else unlistenGoogleWorkspace = unlisten;
     });
 
     void listen<TabTitleChanged>('spark-tab-title', (event) => {
@@ -269,6 +281,7 @@ export default function App() {
     return () => {
       disposed = true;
       unlistenOpenUrl?.();
+      unlistenGoogleWorkspace?.();
       unlistenTitle?.();
     };
   }, [addUrlTab, commitState]);

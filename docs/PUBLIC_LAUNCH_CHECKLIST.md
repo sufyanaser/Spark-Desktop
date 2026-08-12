@@ -18,7 +18,7 @@ This checklist separates repository readiness from public promotion.
 - [ ] Confirm the latest installed release auto-updates successfully from the previous version.
 - [ ] Verify close/minimize/maximize/drag on a real Windows machine.
 - [ ] Verify Spark sign-in persists after restart.
-- [ ] Verify Docs and Sheets opened by Spark remain inside Spark Desktop and load reliably.
+- [ ] Verify Drive, Docs, and Sheets opened by Spark launch in Google Chrome and load reliably.
 - [ ] Verify a failed update check never blocks application launch.
 
 ## Public presentation
