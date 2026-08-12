@@ -17,16 +17,16 @@ The most valuable shell responsibilities have been:
 - additional native windows;
 - keyboard-first tab management;
 - native window movement and controls;
-- in-app routing for related Google Workspace documents;
+- reliable Chrome handoff for related Google Workspace documents;
 - automatic signed desktop updates.
 
 The design becomes worse when it starts behaving like a full browser. An address bar, bookmarks, extensions, history UI, and unrelated navigation add complexity without improving the core Spark workflow.
 
 ## 2. Google Workspace continuity matters
 
-Spark can produce or open Google Docs and Google Sheets as part of a workflow. Sending those documents to a separate browser interrupts the desktop context.
+Spark can produce or open Google Drive files, Google Docs, and Google Sheets as part of a workflow. In practice, these Workspace surfaces are not consistently reliable inside the embedded WebView2 host.
 
-Spark Desktop therefore treats Docs and Sheets opened from Spark as part of the same workspace and routes them into internal tabs.
+Spark Desktop therefore keeps Spark itself in-app and hands Drive, Docs, and Sheets links to Google Chrome, where Google Workspace receives its expected browser environment.
 
 This exposed an important integration lesson: modern Google Workspace applications can rely on normal browser popup/window semantics during startup. A desktop webview host cannot safely assume that every `window.open()` can be denied and reconstructed as a URL-only navigation without side effects.
 
@@ -44,7 +44,7 @@ A WebView host makes product decisions whenever it intercepts navigation:
 For Spark Desktop, the useful boundary is intentionally small:
 
 - Gemini Spark stays in-app.
-- Google Docs and Sheets opened from Spark stay in-app.
+- Google Drive, Docs, and Sheets opened from Spark launch in Google Chrome.
 - Spark Desktop does not try to become a general web browser.
 
 ## 4. Shared session state is essential
@@ -92,9 +92,9 @@ The prototype suggests several capabilities that could be useful in a first-part
 
 1. Native multi-tab Spark workspaces.
 2. Persistent project/session restoration.
-3. First-class handoff between Spark and Docs/Sheets without leaving the desktop context.
+3. First-class handoff from Spark to Drive/Docs/Sheets with an explicit, reliable Chrome transition.
 4. Native keyboard navigation across Spark workspaces.
-5. Clear rules for opening related Google surfaces inside the same desktop task.
+5. Clear rules for handing related Google Workspace surfaces to the supported browser environment.
 6. Lightweight desktop update and lifecycle behavior without exposing browser complexity.
 
 ## 9. What would be useful to learn from Google / the community

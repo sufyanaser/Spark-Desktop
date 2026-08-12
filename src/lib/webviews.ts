@@ -73,6 +73,10 @@ export async function reloadTab(tab: SparkTab): Promise<void> {
   await invoke('reload_webview', { label: tab.label });
 }
 
+export async function openGoogleWorkspaceInChrome(url: string): Promise<void> {
+  await invoke('open_google_workspace_in_chrome', { url });
+}
+
 export async function closeTabWebview(tab: SparkTab): Promise<void> {
   const handle = handles.get(tab.id) ?? (await Webview.getByLabel(tab.label));
   handles.delete(tab.id);

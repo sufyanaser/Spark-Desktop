@@ -1,4 +1,6 @@
 use serde::Serialize;
+#[cfg(target_os = "windows")]
+use std::{env, path::PathBuf, process::Command};
 use tauri::{Emitter, Manager, WindowEvent};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, ShortcutState};
 
@@ -18,8 +20,9 @@ const SPARK_WORKSPACE_LINK_ROUTING_SCRIPT: &str = r#"
   const isWorkspaceUrl = (value) => {
     try {
       const url = new URL(String(value), window.location.href);
-      return url.origin === 'https://docs.google.com' &&
-        (url.pathname.startsWith('/document/') || url.pathname.startsWith('/spreadsheets/'));
+      return url.origin === 'https://drive.google.com' ||
+        (url.origin === 'https://docs.google.com' &&
+          (url.pathname.startsWith('/document/') || url.pathname.startsWith('/spreadsheets/')));
     } catch {
       return false;
     }
@@ -61,17 +64,104 @@ fn is_shell_window_label(label: &str) -> bool {
     label == "main" || label.starts_with("window-")
 }
 
-fn is_workspace_document(url: &tauri::Url) -> bool {
-    if url.host_str() != Some("docs.google.com") {
-        return false;
+fn is_google_workspace_url(url: &tauri::Url) -> bool {
+    match url.host_str() {
+        Some("drive.google.com") => true,
+        Some("docs.google.com") => {
+            let path = url.path();
+            path.starts_with("/document/") || path.starts_with("/spreadsheets/")
+        }
+        _ => false,
     }
-
-    let path = url.path();
-    path.starts_with("/document/") || path.starts_with("/spreadsheets/")
 }
 
 fn is_spark_url(url: &tauri::Url) -> bool {
     url.host_str() == Some("gemini.google.com") && url.path().starts_with("/spark")
+}
+
+#[cfg(target_os = "windows")]
+fn chrome_install_candidates() -> Vec<PathBuf> {
+    ["LOCALAPPDATA", "PROGRAMFILES", "PROGRAMFILES(X86)"]
+        .into_iter()
+        .filter_map(|name| env::var_os(name).map(PathBuf::from))
+        .map(|root| {
+            root.join("Google")
+                .join("Chrome")
+                .join("Application")
+                .join("chrome.exe")
+        })
+        .collect()
+}
+
+#[cfg(target_os = "windows")]
+fn launch_google_chrome(url: &tauri::Url) -> Result<(), String> {
+    for executable in chrome_install_candidates() {
+        if executable.is_file() {
+            return Command::new(&executable)
+                .arg(url.as_str())
+                .spawn()
+                .map(|_| ())
+                .map_err(|error| format!("Google Chrome could not open the link: {error}"));
+        }
+    }
+
+    const CHROME_REGISTRY_LAUNCH: &str = r#"
+& {
+  param([string]$TargetUrl)
+  $ErrorActionPreference = 'Stop'
+  $registryKeys = @(
+    'Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe',
+    'Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe'
+  )
+  $chrome = $null
+  foreach ($key in $registryKeys) {
+    $chrome = (Get-ItemProperty -LiteralPath $key -ErrorAction SilentlyContinue).'(default)'
+    if ($chrome) { break }
+  }
+  if (-not $chrome) { throw 'Google Chrome is not installed.' }
+  Start-Process -FilePath $chrome -ArgumentList @($TargetUrl)
+}
+"#;
+
+    let status = Command::new("powershell.exe")
+        .args([
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-WindowStyle",
+            "Hidden",
+            "-Command",
+            CHROME_REGISTRY_LAUNCH,
+        ])
+        .arg(url.as_str())
+        .status()
+        .map_err(|error| format!("Google Chrome could not be located: {error}"))?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err("Google Chrome is required to open Google Drive, Docs, and Sheets links.".into())
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn launch_google_chrome(_url: &tauri::Url) -> Result<(), String> {
+    Err("Opening Google Workspace links in Chrome is supported on Windows only.".into())
+}
+
+#[tauri::command]
+fn open_google_workspace_in_chrome(url: String) -> Result<(), String> {
+    let parsed_url: tauri::Url = url
+        .parse()
+        .map_err(|error| format!("Invalid Google Workspace URL: {error}"))?;
+
+    if parsed_url.scheme() != "https" || !is_google_workspace_url(&parsed_url) {
+        return Err(
+            "Only HTTPS Google Drive, Docs, and Sheets links can be opened externally.".into(),
+        );
+    }
+
+    launch_google_chrome(&parsed_url)
 }
 
 fn register_app_shortcuts(app: &tauri::AppHandle) {
@@ -101,7 +191,11 @@ fn reload_webview(app: tauri::AppHandle, label: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn control_window(app: tauri::AppHandle, window_label: String, action: String) -> Result<(), String> {
+fn control_window(
+    app: tauri::AppHandle,
+    window_label: String,
+    action: String,
+) -> Result<(), String> {
     if !is_shell_window_label(&window_label) {
         return Err("Window control is restricted to Spark Desktop shell windows.".into());
     }
@@ -191,14 +285,12 @@ async fn create_tab_webview(
     let title_window = parent.clone();
     let title_label = label.clone();
 
-    let mut builder = tauri::webview::WebviewBuilder::new(
-        label.clone(),
-        tauri::WebviewUrl::External(parsed_url),
-    )
-    .focused(true)
-    .incognito(false)
-    .devtools(false)
-    .zoom_hotkeys_enabled(true);
+    let mut builder =
+        tauri::webview::WebviewBuilder::new(label.clone(), tauri::WebviewUrl::External(parsed_url))
+            .focused(true)
+            .incognito(false)
+            .devtools(false)
+            .zoom_hotkeys_enabled(true);
 
     if route_workspace_navigation {
         let popup_window = parent.clone();
@@ -209,7 +301,16 @@ async fn create_tab_webview(
         builder = builder
             .initialization_script(SPARK_WORKSPACE_LINK_ROUTING_SCRIPT)
             .on_new_window(move |new_url, _features| {
-                if is_workspace_document(&new_url) || is_spark_url(&new_url) {
+                if is_google_workspace_url(&new_url) {
+                    let _ = popup_window.emit(
+                        "spark-open-google-workspace",
+                        OpenUrlRequest {
+                            url: new_url.to_string(),
+                            source_label: popup_source_label.clone(),
+                        },
+                    );
+                    tauri::webview::NewWindowResponse::Deny
+                } else if is_spark_url(&new_url) {
                     let _ = popup_window.emit(
                         "spark-open-url",
                         OpenUrlRequest {
@@ -223,9 +324,9 @@ async fn create_tab_webview(
                 }
             })
             .on_navigation(move |new_url| {
-                if is_workspace_document(new_url) {
+                if is_google_workspace_url(new_url) {
                     let _ = navigation_window.emit(
-                        "spark-open-url",
+                        "spark-open-google-workspace",
                         OpenUrlRequest {
                             url: new_url.to_string(),
                             source_label: navigation_source_label.clone(),
@@ -274,11 +375,14 @@ pub fn run() {
                             Some("new-tab")
                         } else if shortcut.matches(Modifiers::CONTROL, Code::KeyW) {
                             Some("close-tab")
-                        } else if shortcut.matches(Modifiers::CONTROL | Modifiers::SHIFT, Code::Tab) {
+                        } else if shortcut.matches(Modifiers::CONTROL | Modifiers::SHIFT, Code::Tab)
+                        {
                             Some("previous-tab")
                         } else if shortcut.matches(Modifiers::CONTROL, Code::Tab) {
                             Some("next-tab")
-                        } else if shortcut.matches(Modifiers::CONTROL | Modifiers::SHIFT, Code::KeyN) {
+                        } else if shortcut
+                            .matches(Modifiers::CONTROL | Modifiers::SHIFT, Code::KeyN)
+                        {
                             Some("new-window")
                         } else if shortcut.matches(Modifiers::CONTROL, Code::KeyR) {
                             Some("reload-tab")
@@ -321,6 +425,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             reload_webview,
             control_window,
+            open_google_workspace_in_chrome,
             create_shell_window,
             create_tab_webview
         ])
@@ -328,4 +433,37 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .run(tauri::generate_context!())
         .expect("error while running Spark Desktop");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_google_workspace_url;
+
+    fn parsed(url: &str) -> tauri::Url {
+        url.parse().expect("test URL should be valid")
+    }
+
+    #[test]
+    fn recognizes_google_drive_docs_and_sheets_urls() {
+        for url in [
+            "https://drive.google.com/file/d/123/view",
+            "https://drive.google.com/open?id=123",
+            "https://docs.google.com/document/d/123/edit",
+            "https://docs.google.com/spreadsheets/d/123/edit",
+        ] {
+            assert!(is_google_workspace_url(&parsed(url)), "{url}");
+        }
+    }
+
+    #[test]
+    fn rejects_unrelated_or_lookalike_urls() {
+        for url in [
+            "https://gemini.google.com/spark/abc",
+            "https://docs.google.com/presentation/d/123/edit",
+            "https://drive.google.com.example.com/file/d/123/view",
+            "https://example.com/https://drive.google.com/file/d/123/view",
+        ] {
+            assert!(!is_google_workspace_url(&parsed(url)), "{url}");
+        }
+    }
 }

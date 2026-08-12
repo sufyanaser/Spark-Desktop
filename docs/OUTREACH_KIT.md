@@ -4,17 +4,17 @@ Use this material when introducing Spark Desktop publicly. Keep the project posi
 
 ## One-line description
 
-**Spark Desktop is an independent Windows shell for Gemini Spark that adds native tabs, persistent sessions, Google Docs/Sheets continuity, and signed automatic updates without becoming a general-purpose browser.**
+**Spark Desktop is an independent Windows shell for Gemini Spark that adds native tabs, persistent sessions, reliable Google Drive/Docs/Sheets handoff to Chrome, and signed automatic updates without becoming a general-purpose browser.**
 
 ## Short technical pitch
 
-Spark Desktop explores what a focused first-class Windows workflow around Gemini Spark can look like while leaving the Gemini UI and Google authentication untouched. It uses Tauri 2, React/TypeScript, and Microsoft Edge WebView2, with child webviews for Spark and related Google Workspace documents.
+Spark Desktop explores what a focused first-class Windows workflow around Gemini Spark can look like while leaving the Gemini UI and Google authentication untouched. It uses Tauri 2, React/TypeScript, and Microsoft Edge WebView2 for Spark, with an explicit Chrome handoff for Google Workspace documents.
 
 The most useful findings from the prototype are documented in [`GEMINI_SPARK_DESKTOP_FINDINGS.md`](GEMINI_SPARK_DESKTOP_FINDINGS.md).
 
 ## Suggested Gemini feedback text
 
-> I built Spark Desktop, an independent Windows prototype that wraps Gemini Spark in a minimal native shell with multi-tab workspaces, persistent sessions, internal Google Docs/Sheets handoff, and signed automatic updates. While building it I documented several integration findings around WebView popup semantics, Workspace navigation, and desktop workflow continuity. I would value guidance on recommended embedding/integration boundaries for Gemini web surfaces in desktop WebView hosts. Project and findings: https://github.com/sufyanaser/Spark-Desktop
+> I built Spark Desktop, an independent Windows prototype that wraps Gemini Spark in a minimal native shell with multi-tab workspaces, persistent sessions, reliable Google Drive/Docs/Sheets handoff to Chrome, and signed automatic updates. While building it I documented several integration findings around WebView popup semantics, Workspace navigation, and desktop workflow continuity. I would value guidance on recommended embedding/integration boundaries for Gemini web surfaces in desktop WebView hosts. Project and findings: https://github.com/sufyanaser/Spark-Desktop
 
 ## Suggested community post title
 
@@ -24,7 +24,7 @@ The most useful findings from the prototype are documented in [`GEMINI_SPARK_DES
 
 Spark Desktop is a small independent Windows experiment built around a simple question: what desktop behavior is genuinely useful around Gemini Spark without reimplementing Gemini or turning the app into another browser?
 
-The current prototype adds native tabs/windows, persistent Google session state, internal Google Docs/Sheets handoff, keyboard controls, and signed automatic updates. The most interesting part was not the shell UI; it was learning how modern Google Workspace flows behave when a WebView host intercepts popup/navigation behavior.
+The current prototype adds native tabs/windows, persistent Google session state, Google Drive/Docs/Sheets handoff to Chrome, keyboard controls, and signed automatic updates. The most interesting part was not the shell UI; it was learning how modern Google Workspace flows behave when a WebView host intercepts popup/navigation behavior.
 
 I documented the product and integration findings here:
 https://github.com/sufyanaser/Spark-Desktop/blob/main/docs/GEMINI_SPARK_DESKTOP_FINDINGS.md
@@ -40,7 +40,7 @@ Spark Desktop is independent and is not affiliated with, endorsed by, or sponsor
 
 **Built: Spark Desktop** — a focused Windows shell around Gemini Spark.
 
-Native tabs. Persistent sessions. Docs/Sheets stay in the same desktop workspace. Signed automatic updates. No address bar, bookmarks, or attempt to rebuild Gemini.
+Native tabs. Persistent sessions. Drive/Docs/Sheets open reliably in Chrome. Signed automatic updates. No address bar, bookmarks, or attempt to rebuild Gemini.
 
 The useful part of the experiment was the integration work: WebView2 popup semantics, Workspace navigation, session continuity, and defining where a desktop shell should stop.
 
